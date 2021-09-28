@@ -12,7 +12,7 @@ from db_access import *
 import os
 import re
 import requests
-from datetime import datetime, date
+from datetime import datetime, timedelta, timezone
 import chess
 import chess.pgn
 import random
@@ -96,7 +96,7 @@ class Match:
         """
         Returns date in format DATE and time in format TIME that db can accept
         """
-        now = datetime.now()
+        now = datetime.now(timezone.utc) + timedelta(hours=10)
         date = now.strftime("%Y-%m-%d")
         time = now.strftime("%H:%M:%S")
         return (date, time)
@@ -466,12 +466,12 @@ class ChessGameMaster:
         ## Play Match
 
         ## define pgn attributes
-        today = date.today()
+        now = datetime.now(timezone.utc) + timedelta(hours=10)
         board = chess.Board()
         game = chess.pgn.Game()
         game.headers["Event"] = "Bot VS Bot"
         game.headers["Site"] = "Sydney"
-        game.headers["Date"] = today.strftime("%d/%m/%Y")
+        game.headers["Date"] = now.strftime("%d/%m/%Y")
         game.headers["Round"] = str(self.get_round())
 
         ##Should be changed to players Ids/names
