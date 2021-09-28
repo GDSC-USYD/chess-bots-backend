@@ -8,7 +8,7 @@ from game_master import *
 
 from flask import Flask, jsonify, make_response, redirect, url_for, request
 from flask_cors import CORS
-#import threading # Cloud Run automatically increases container instances 
+#import threading # Cloud Run automatically increases container instances
 # import os # imported in db_connect
 
 
@@ -201,36 +201,36 @@ def register_new_player():
 
 
 
-@app.route('/<player_id>/model_url', methods=["GET"]) # GET e.g /2/model_url
-def return_model_url(player_id):
-    """
-    Retrieves player model_url given -> player_id
-    Returns -> model_url
-    """
-    db = connect_to_db()
-
-    with db.connect() as conn:
-        db_player = db_retrieve_entry_data(conn, "players", "player_id", int(player_id))
-        conn.close()
-
-    if db_player == None:
-        # player doesn't exist / error retrieving from DB
-        model_url = None
-    else:
-        # retrieve player model_url
-        model_url = db_player[3]
-
-    # if found
-    if model_url != None:
-        data = {'message': 'Found', 'code': 'SUCCESS', "payload": model_url}
-        status_code = 200
-    else:
-        data = {'message': 'Unfound', 'code': 'FAIL', "payload": model_url}
-        status_code = 404
-
-    response = make_response(jsonify(data), status_code)
-    response.headers["Content-Type"] = "application/json"
-    return response
+# @app.route('/<player_id>/model_url', methods=["GET"]) # GET e.g /2/model_url
+# def return_model_url(player_id):
+#     """
+#     Retrieves player model_url given -> player_id
+#     Returns -> model_url
+#     """
+#     db = connect_to_db()
+#
+#     with db.connect() as conn:
+#         db_player = db_retrieve_entry_data(conn, "players", "player_id", int(player_id))
+#         conn.close()
+#
+#     if db_player == None:
+#         # player doesn't exist / error retrieving from DB
+#         model_url = None
+#     else:
+#         # retrieve player model_url
+#         model_url = db_player[3]
+#
+#     # if found
+#     if model_url != None:
+#         data = {'message': 'Found', 'code': 'SUCCESS', "payload": model_url}
+#         status_code = 200
+#     else:
+#         data = {'message': 'Unfound', 'code': 'FAIL', "payload": model_url}
+#         status_code = 404
+#
+#     response = make_response(jsonify(data), status_code)
+#     response.headers["Content-Type"] = "application/json"
+#     return response
 
 
 
@@ -304,9 +304,11 @@ def return_players():
         db_players = db_retrieve_table_list(conn, "players")
         conn.close()
 
-    # remove password key:value pair
+    # remove unnecessary key:value pairs
+    to_remove = ["model_url", "email", "password"]
     for player_dict in db_players:
-        del player_dict["password"]
+        for key in to_remove:
+            del player_dict[key]
 
     # if found
     if db_players != None:
@@ -359,11 +361,18 @@ def return_elo():
 def launch_chess_game_master():
     """
     Launches chess game master and runs games, uploads player and match data into db
+    Receives -> launch_key and launches if validated against secret
     Returns -> nothing
     """
     launch_status = "NOT OK"
 
     try:
+        # try validate call to rungames
+        launch_key = request.headers.get("Authorisation")
+
+        if launch_key != os.environ["LAUNCH_KEY"]:
+            raise Exception("Launch key is invalid.")
+
         db = connect_to_db()
         with db.connect() as conn:
             chess_game_master = ChessGameMaster(conn)
