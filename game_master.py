@@ -565,7 +565,8 @@ class ChessGameMaster:
         """
         Given player and scores list calculate elo_score
         """
-        player.elo_score = sum(player.scores)//len(player.scores)
+        if len(player.scores) > 0:
+            player.elo_score = sum(player.scores)//len(player.scores)            
 
 
     def run(self):
