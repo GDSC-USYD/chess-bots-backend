@@ -156,7 +156,7 @@ class ChessGameMaster:
         for player in players:
             #player.status_flag = 0
 
-            if player.status_flag >= -10: # just initialised or reset
+            if player.status_flag >= 1: # just inserted new model link
                 # try download model for each player (even if link hasnt changed)
                 self.download_model(player)
             if player.model_path != None: # download succeeded but not loaded
