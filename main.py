@@ -2,7 +2,7 @@ from db_connect import *
 from db_access import *
 from secure import *
 from game_master import *
-#from send_email import * # email function added soon
+from send_email import *
 
 
 
@@ -17,12 +17,6 @@ app = Flask(__name__)
 CORS(app) # enable CORS on all domains
 
 
-#NOT FINISHED
-def send_reminder_email(email, password):
-    #sends an email to the specified email
-    pass
-
-
 
 @app.route('/forgotpass', methods=["POST"]) # POST
 def player_reset_password():
@@ -35,46 +29,49 @@ def player_reset_password():
     # try import and validate given values
     try:
         name = data_dict["name"].replace("\'", "‘") #change single quotes
-        email = data_dict["email"].replace("\'", "‘")
+        email_recv = data_dict["email"].replace("\'", "‘")
         table_name = "players"
-        credentials_message = "OK"
 
-        if len(password) < 8:
-            raise Exception(password, "Password is too short.")
-        elif len(name) < 1:
+        if len(name) < 1:
             raise Exception(name, "Name is too short.")
 
     except Exception as e:
-        if len(e.args) > 0:
+        if len(e.args) > 1:
             credentials_message = f"Error with value: {e.args[0]}. {e.args[1]}"
         else:
-            credentials_message = e
+            credentials_message = str(e)
         data = {'message': 'Error', 'code': 'FAIL', "payload": str(credentials_message)}
         status_code = 400
         return make_response(jsonify(data), status_code)
 
     # passed initial check, try retrieve from db
-    # retrieve player data
-    db_player = db_retrieve_entry_data(conn, "players", "name", name)
+    db = connect_to_db()
+    with db.connect() as conn:
+        db_player = db_retrieve_entry_data(conn, "players", "name", name)
+        conn.close()
 
     if db_player != None:
+        db_check_message = "OK"
+
         #extract password
         password = db_player[6]
 
         # send reminder email
-        send_reminder_email(email, password)
-        db_check_message = "OK"
+        email_send_message = send_reminder_email(email_recv, password)
 
-    else:
+
+    else: # error finding player in db
         db_check_message = "Could not find player."
 
-    # if found + OK
-    if db_check_message == "OK":
-        data = {'message': 'Approved', 'code': 'SUCCESS', "payload": db_check_message}
-        status_code = 201
-    else: #if error
+    if db_check_message != "OK": # if db check failed
         data = {'message': 'Denied', 'code': 'FAIL', "payload": str(db_check_message)}
         status_code = 400
+    elif email_send_message != "OK": # if email error
+        data = {'message': 'Error', 'code': 'FAIL', "payload": str(email_send_message)}
+        status_code = 400
+    else:
+        data = {'message': 'Approved', 'code': 'SUCCESS', "payload": str(email_send_message)}
+        status_code = 201
 
     return make_response(jsonify(data), status_code)
 
@@ -96,7 +93,6 @@ def player_login():
         name = data_dict["name"].replace("\'", "‘") #change single quotes
         password = data_dict["password"].replace("\'", "‘") #change single quotes
         table_name = "players"
-        credentials_message = "OK"
 
         if len(password) < 8:
             raise Exception(password, "Password is too short.")
@@ -104,10 +100,10 @@ def player_login():
             raise Exception(name, "Name is too short.")
 
     except Exception as e:
-        if len(e.args) > 0:
+        if len(e.args) > 1:
             credentials_message = f"Error with value: {e.args[0]}. {e.args[1]}"
         else:
-            credentials_message = e
+            credentials_message = str(e)
         data = {'message': 'Error', 'code': 'FAIL', "payload": str(credentials_message)}
         status_code = 400
         return make_response(jsonify(data), status_code)
@@ -153,7 +149,6 @@ def register_new_player():
         name = data_dict["name"].replace("\'", "‘") #change single quotes
         password = data_dict["password"].replace("\'", "‘")
         email = data_dict["email"].replace("\'", "‘")
-        credentials_message = "OK"
 
         if len(password) < 8:
             raise Exception(password, "Password is too short.")
@@ -163,10 +158,10 @@ def register_new_player():
             raise Exception(email, "Email is invalid.")
 
     except Exception as e:
-        if len(e.args) > 0:
+        if len(e.args) > 1:
             credentials_message = f"Error with value: {e.args[0]}. {e.args[1]}"
         else:
-            credentials_message = e
+            credentials_message = str(e)
         data = {'message': 'Error', 'code': 'FAIL', "payload": str(credentials_message)}
         status_code = 400
         return make_response(jsonify(data), status_code)
