@@ -555,8 +555,13 @@ class ChessGameMaster:
 
 
     def calculate_elo_score(self, player):
-        #given player.scores list calculate elo_score
-        player.elo_score = sum(player.scores) # TEMPORARY CALCULATION
+        """
+        Given player with list of scores calculate elo_score
+        """
+        if len(player.scores) > 0:
+            player.elo_score = (player.elo_score + (sum(player.scores)/len(player.scores))) // 2
+            if player.elo_score < 0:
+                player.elo_score = 0
 
 
     def run(self):
@@ -587,17 +592,24 @@ class ChessGameMaster:
                     status_flag = max(player_error_flags) # set match status flag the first occuring of the player errors
                     self.matches.append(Match(player_1.player_id, None, player_2.player_id, None, None, self.batch_id, None, status_flag))
 
-        # finished games
-        for player in self.players:
-            self.calculate_elo_score(player)
+        elo_status = "OK"
+        try:
+            # finished games
+            for player in self.players:
+                self.calculate_elo_score(player)
+        except Exception as e:
+            elo_status = f"Error calculating elo: {str(e)}"
 
-        # update database
-        db_upload_message = self.update_players_data() #uploads all player object data to db
-        if db_upload_message == "OK":
-            db_upload_message = self.update_matches_data() #uploads all matches object data to db
+        if elo_status == "OK":
+            # update database
+            db_upload_message = self.update_players_data() #uploads all player object data to db
+            if db_upload_message == "OK":
+                db_upload_message = self.update_matches_data() #uploads all matches object data to db
 
-        # end VM instance
-        launch_status = str(db_upload_message)
+            # end VM instance
+            launch_status = str(db_upload_message)
+        else:
+            launch_status = str(elo_status)
 
         return launch_status
 
