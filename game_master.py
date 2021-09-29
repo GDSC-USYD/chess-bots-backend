@@ -524,18 +524,25 @@ class ChessGameMaster:
         #If you apply a 50-move limit, the longest possible chess game is 5898.5 moves long.
 
         if game.headers["Result"] =='1-0':
-            player1_score = ((400 *1/iteration)-(0))/(400-0)
-            player2_score = ((-400 *iteration)-(-400*5898.5))/((0)-((-400*5898.5)))
+            #player1_score = ((400 *1/iteration)-(0))/(400-0)
+            #player2_score = ((-400 *iteration)-(-400*5898.5))/((0)-((-400*5898.5)))
+            # Using ELO calculations
+            player1_score = (player_2.elo_score + 400)
+            player2_score = (player_1.elo_score - 400)
             winner_id = player_1.player_id
             status_flag = 1 # OK
         elif game.headers["Result"] =='0-1':
-            player1_score = ((-400 *iteration)-(-400*5898.5))/((0)-((-400*5898.5)))
-            player2_score = ((400 *1/iteration)-(0))/(400-0)
+            #player1_score = ((-400 *iteration)-(-400*5898.5))/((0)-((-400*5898.5)))
+            #player2_score = ((400 *1/iteration)-(0))/(400-0)
+            player1_score = (player_2.elo_score - 400)
+            player2_score = (player_1.elo_score + 400)
             winner_id = player_2.player_id
             status_flag = 1 # OK
         else:
-            player1_score = ((200 *iteration)-(0))/((200*5898.5)-(0))
-            player2_score = ((200 *iteration)-(0))/((200*5898.5)-(0))
+            #player1_score = ((200 *iteration)-(0))/((200*5898.5)-(0))
+            #player2_score = ((200 *iteration)-(0))/((200*5898.5)-(0))
+            player1_score = player_2.elo_score
+            player2_score = player_1.elo_score
             winner_id = None
             status_flag = 2 # OK BUT Tied Match
 
