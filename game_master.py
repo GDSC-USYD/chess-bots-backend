@@ -563,10 +563,12 @@ class ChessGameMaster:
 
     def calculate_elo_score(self, player):
         """
-        Given player and scores list calculate elo_score
+        Given player with list of scores calculate elo_score
         """
         if len(player.scores) > 0:
-            player.elo_score = sum(player.scores)//len(player.scores)
+            player.elo_score = (player.elo_score + (sum(player.scores)/len(player.scores))) // 2
+            if player.elo_score < 0:
+                player.elo_score = 0
 
 
     def run(self):
@@ -603,7 +605,7 @@ class ChessGameMaster:
             for player in self.players:
                 self.calculate_elo_score(player)
         except Exception as e:
-            elo_status = str(e)
+            elo_status = f"Error calculating elo: {str(e)}"
 
         if elo_status == "OK":
             # update database
