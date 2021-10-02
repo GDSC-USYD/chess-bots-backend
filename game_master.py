@@ -133,7 +133,7 @@ class ChessGameMaster:
     """
     def __init__(self, conn):
         self.conn = conn
-        self.players = self.initialise_players()
+        self.players, self.model_message = self.initialise_players()
         self.matches = []
         self.batch_id = self.get_batch_id()
         self.match_schedule = self.create_match_schedule()
@@ -153,6 +153,7 @@ class ChessGameMaster:
         for p in players_data_list:
             players.append(Player(p["player_id"], p["name"], p["elo_score"], p["model_url"], p["status_flag"]))
 
+        model_message = "OK"
         for player in players:
             #player.status_flag = 0
 
@@ -162,9 +163,10 @@ class ChessGameMaster:
             if player.model_path != None: # download succeeded but not loaded
                 # try load model for each player from downloaded file
                 #print("loading")
-                self.load_model(player)
-
-        return players
+                model_message = self.load_model(player)
+                if model_message != "OK" and player.id == 18:
+                    break
+        return players, model_message
 
 
     def get_players_data(self):
@@ -214,9 +216,11 @@ class ChessGameMaster:
             player.model = keras.models.load_model(player.model_path)
             #print(player.model)
             player.status_flag = 2 # set model load error flag
+            return "OK"
         except Exception as e:
             #print(e)
             player.status_flag = -2 # set model load error flag
+            return str(e)
 
 
     def extract_url_id(self, url):
@@ -577,6 +581,8 @@ class ChessGameMaster:
         """
         #print("running the games now")
         #self.print_players()
+        if self.model_message != "OK":
+            return self.model_message
 
         for player_1, player_2 in self.match_schedule:
             #print(f"Versing {player_1.name} and {player_2.name}")
